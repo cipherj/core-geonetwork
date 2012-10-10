@@ -213,6 +213,10 @@
       <groupId>mysql</groupId>
       <artifactId>mysql-connector-java</artifactId>
     </dependency>
+    <dependency>
+        <groupId>org.apache.jena</groupId>
+        <artifactId>jena-tdb</artifactId>
+    </dependency>
 		<!-- Not permitted under oracle licensing rules
     <dependency>
       <groupId>ojdbc</groupId>

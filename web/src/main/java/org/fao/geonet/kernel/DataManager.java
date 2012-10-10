@@ -119,23 +119,24 @@ public class DataManager {
      * @param appPath
      * @throws Exception
      */
-	public DataManager(ServiceContext context, SvnManager svnManager, XmlSerializer xmlSerializer, SchemaManager scm, SearchManager sm, AccessManager am, Dbms dbms, SettingManager ss, String baseURL, String dataDir, String thesaurusDir, String appPath) throws Exception {
+	public DataManager(ServiceContext context, SvnManager svnManager, XmlSerializer xmlSerializer, SchemaManager scm, SearchManager sm, AccessManager am, Dbms dbms, SettingManager ss, String baseURL, String dataDir, String thesaurusDir, String appPath, DataManagerRDF dataManRDF) throws Exception {
 		searchMan = sm;
 		accessMan = am;
 		settingMan= ss;
 		schemaMan = scm;
 		editLib = new EditLib(schemaMan);
-        servContext=context;
+		servContext=context;
 
 		this.baseURL = baseURL;
-        this.dataDir = dataDir;
-        this.thesaurusDir = thesaurusDir;
+		this.dataDir = dataDir;
+		this.thesaurusDir = thesaurusDir;
 		this.appPath = appPath;
 
 		stylePath = context.getAppPath() + FS + Geonet.Path.STYLESHEETS + FS;
 
 		this.xmlSerializer = xmlSerializer;
 		this.svnManager    = svnManager;
+		this.dataManRDF	   = dataManRDF;
 
 		init(context, dbms, false);
 	}
@@ -1592,6 +1593,7 @@ public class DataManager {
      */
 	public Element getMetadata(Dbms dbms, String id) throws Exception {
 		boolean doXLinks = xmlSerializer.resolveXLinks();
+		System.out.println("Reading metadata from : public Element getMetadata(Dbms dbms, String id)\n");
 		Element md = xmlSerializer.selectNoXLinkResolver(dbms, "Metadata", id);
 		if (md == null) return null;
 		md.detach();
@@ -1611,6 +1613,8 @@ public class DataManager {
      * @throws Exception
      */
 	public Element getMetadata(ServiceContext srvContext, String id, boolean forEditing, boolean withEditorValidationErrors, boolean keepXlinkAttributes) throws Exception {
+		System.out.println("Reading metadata from : public Element getMetadata(ServiceContext srvContext, String id, boolean forEditing, boolean withEditorValidationErrors, boolean keepXlinkAttributes)\n");
+		
 		Dbms dbms = (Dbms) srvContext.getResourceManager().open(Geonet.Res.MAIN_DB);
 		boolean doXLinks = xmlSerializer.resolveXLinks();
 		Element md = xmlSerializer.selectNoXLinkResolver(dbms, "Metadata", id);
@@ -3300,6 +3304,7 @@ public class DataManager {
 	private static String FS = File.separator;
 	private XmlSerializer xmlSerializer;
 	private SvnManager svnManager;
+	private DataManagerRDF dataManRDF;
 
     /**
      * TODO javadoc.

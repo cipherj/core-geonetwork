@@ -58,6 +58,7 @@ import org.fao.geonet.constants.Geonet;
 import org.fao.geonet.csw.common.Csw;
 import org.fao.geonet.kernel.AccessManager;
 import org.fao.geonet.kernel.DataManager;
+import org.fao.geonet.kernel.DataManagerRDF;
 import org.fao.geonet.kernel.SchemaManager;
 import org.fao.geonet.kernel.SvnManager;
 import org.fao.geonet.kernel.ThesaurusManager;
@@ -115,6 +116,7 @@ public class Geonetwork implements ApplicationHandler {
 	private ThreadPool        threadPool;
 	private String   FS         = File.separator;
 	private Element dbConfiguration;
+	private DataManagerRDF		dataManRDF;
 
 	private static final String       SPATIAL_INDEX_FILENAME    = "spatialindex";
 	private static final String       IDS_ATTRIBUTE_NAME        = "id";
@@ -342,8 +344,9 @@ public class Geonetwork implements ApplicationHandler {
 		} else {
 			xmlSerializer = new XmlSerializerDb(settingMan);
 		}
-
-		DataManager dataMan = new DataManager(context, svnManager, xmlSerializer, schemaMan, searchMan, accessMan, dbms, settingMan, baseURL, dataDir, thesauriDir, path);
+ 
+		dataManRDF = new DataManagerRDF(dataDir);
+		DataManager dataMan = new DataManager(context, svnManager, xmlSerializer, schemaMan, searchMan, accessMan, dbms, settingMan, baseURL, dataDir, thesauriDir, path, dataManRDF);
 
 
         /**
@@ -809,6 +812,8 @@ public class Geonetwork implements ApplicationHandler {
 		harvestMan.shutdown();
 
 		logger.info("  - Z39.50...");
+		
+		dataManRDF.closeDatabase();
 		Server.end();
 	}
 
