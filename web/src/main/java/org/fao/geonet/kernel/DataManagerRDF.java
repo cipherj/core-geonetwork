@@ -4,6 +4,8 @@
 package org.fao.geonet.kernel;
 
 import com.hp.hpl.jena.query.Dataset;
+import com.hp.hpl.jena.query.QueryExecution;
+import com.hp.hpl.jena.query.QueryExecutionFactory;
 import com.hp.hpl.jena.query.ReadWrite;
 import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
@@ -13,6 +15,7 @@ import com.hp.hpl.jena.tdb.TDBFactory;
 import org.fao.geonet.constants.Geonet;
 import org.jdom.Element;
 import org.jdom.output.XMLOutputter;
+import org.jdom.JDOMException;
 
 import jeeves.utils.Log;
 import jeeves.utils.Xml;
@@ -20,6 +23,7 @@ import jeeves.utils.Xml;
 import java.io.File;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.util.TreeMap;
 
 public class DataManagerRDF {
@@ -94,7 +98,7 @@ public class DataManagerRDF {
 		ByteArrayOutputStream baos = new ByteArrayOutputStream(); 
 		
 		try {
-			System.out.println("RDF/XML Data : ");
+			System.out.println("Creating RDF/XML Data : ");
 			xmlOP.output(md, System.out);		// DEBUG
 			System.out.println("\nEnd of RDF/XML");
 			xmlOP.output(md, baos);
@@ -120,29 +124,58 @@ public class DataManagerRDF {
 		Element mdRDF = getMetadataAsRDFXML(uuid);
 		Element mdXML = null;
 		
-		try {
+		// TODO: Uncomment when rdf2xml.xsl has been written
+/*		try {
 			mdXML = Xml.transform(mdRDF, appPath + Geonet.Path.STYLESHEETS + FS + "rdf2xml.xsl");
 		}
 		catch(Exception e) {
 			Log.error("Geonetwork.DataManagerRDF","ERROR : Convertion of RDF/XMl -> XML failed");
 			
 			mdXML = null;
-		}
+		}*/
 		
 		return mdXML;
 	}
 	
+	/**
+	 * Get metadata out of the RDF database in an RDF/XML format
+	 */
 	public Element getMetadataAsRDFXML(String uuid) {
-		// TODO: Get metadata from database
+
+		// TODO: Fix this, it is a bit of a cludge 
+		String metadataname = "<http://example.org/" + uuid + "/metadata>";
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		Element rdfXml = null;
 		
-		System.out.println("DataManagerRDF::getMetadataAsRDFXML(...) - Unfinished");
+		dataset.begin(ReadWrite.READ);
 		
-		return new Element("FIXME");
+		// Create query
+		QueryExecution qExec = QueryExecutionFactory.create("DESCRIBE " + metadataname, dataset);
+		
+		Model metadataModel = qExec.execDescribe();
+		
+		dataset.commit();
+		
+		System.out.println("Got metadata as RDF : ");
+		metadataModel.write(System.out);		// DEBUG
+		System.out.println("End RDF");
+		
+		metadataModel.write(baos);
+		
+		try {
+			rdfXml = Xml.loadStream(new ByteArrayInputStream(baos.toByteArray()));
+		}
+		catch (IOException e) {					// TODO: Deal with errors properly
+			rdfXml = null;
+		}
+		catch (JDOMException e) {
+			rdfXml = null;
+		}
+		
+		return rdfXml;
 	}
 	
 	public boolean updateMetadataFromXML(Element md, String uuid) {
-		System.out.println("DataManagerRDF::updateMetadataFromXML(...) - Unfinished");
-		
 		// Transform XML->RDF
 		Element mdRDF = null;
 		
@@ -156,7 +189,11 @@ public class DataManagerRDF {
 			return false;
 		}
 		
-		// TODO: Update model
+		return updateMetadateFromRDF(mdRDF, uuid);
+	}
+	
+	public boolean updateMetadataFromRDF(Element md, String uuid) {
+		System.out.println("DataManagerRDF::updateMetadataFromRDF(...) - Unfinished");
 		
 		return false;
 	}
