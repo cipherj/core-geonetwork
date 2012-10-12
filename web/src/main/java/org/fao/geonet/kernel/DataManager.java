@@ -131,7 +131,7 @@ public class DataManager {
 		this.dataDir = dataDir;
 		this.thesaurusDir = thesaurusDir;
 		this.appPath = appPath;
-
+		
 		stylePath = context.getAppPath() + FS + Geonet.Path.STYLESHEETS + FS;
 
 		this.xmlSerializer = xmlSerializer;
@@ -1486,6 +1486,9 @@ public class DataManager {
 		String id = xmlSerializer.insert(dbms, schema, xml, serial, source, uuid, null, null, isTemplate, null, owner, groupOwner, "", context);
 		copyDefaultPrivForGroup(context, dbms, id, groupOwner);
 
+		//--- store metadata as RDF
+		dataManRDF.createMetadataFromXML(xml, id);
+		
 		//--- store metadata categories copying them from the template
 		List categList = dbms.select("SELECT categoryId FROM MetadataCateg WHERE metadataId = ?",iTemplateId).getChildren();
 
@@ -1547,6 +1550,9 @@ public class DataManager {
 
         //--- store metadata
         xmlSerializer.insert(dbms, schema, metadata, id, source, uuid, createDate, changeDate, isTemplate, title, owner, group, docType, context);
+        
+        //--- store metadata as RDF
+        dataManRDF.createMetadataFromXML(metadata, id$);
 
         copyDefaultPrivForGroup(context, dbms, id$, group);
 
@@ -1593,10 +1599,16 @@ public class DataManager {
      */
 	public Element getMetadata(Dbms dbms, String id) throws Exception {
 		boolean doXLinks = xmlSerializer.resolveXLinks();
-		System.out.println("Reading metadata from : public Element getMetadata(Dbms dbms, String id)\n");
 		Element md = xmlSerializer.selectNoXLinkResolver(dbms, "Metadata", id);
 		if (md == null) return null;
 		md.detach();
+		
+		// TODO: Uncomment when RDF is working properly
+		/*
+		String uuid = getMetadataUuid(dbms, id);
+		md = dataManRDF.getMetadataAsXML(uuid);
+		*/
+		
 		return md;
 	}
 
@@ -1613,13 +1625,17 @@ public class DataManager {
      * @throws Exception
      */
 	public Element getMetadata(ServiceContext srvContext, String id, boolean forEditing, boolean withEditorValidationErrors, boolean keepXlinkAttributes) throws Exception {
-		System.out.println("Reading metadata from : public Element getMetadata(ServiceContext srvContext, String id, boolean forEditing, boolean withEditorValidationErrors, boolean keepXlinkAttributes)\n");
-		
 		Dbms dbms = (Dbms) srvContext.getResourceManager().open(Geonet.Res.MAIN_DB);
 		boolean doXLinks = xmlSerializer.resolveXLinks();
 		Element md = xmlSerializer.selectNoXLinkResolver(dbms, "Metadata", id);
 		if (md == null) return null;
 
+		// TODO: Uncomment when RDF is working properly
+		/*
+		String uuid = getMetadataUuid(dbms, id);
+		md = dataManRDF.getMetadataAsXML(uuid);
+		*/
+		
 		String version = null;
 
 		if (forEditing) { // copy in xlink'd fragments but leave xlink atts to editor
@@ -1756,6 +1772,9 @@ public class DataManager {
         }
 		//--- write metadata to dbms
         xmlSerializer.update(dbms, id, md, changeDate, updateDateStamp, context);
+        
+		//--- Update metadata in RDF database
+		dataManRDF.updateMetadataFromXML(md, id);
 
         String isTemplate = getMetadataTemplate(dbms, id);
         // Notifies the metadata change to metatada notifier service
@@ -2243,6 +2262,9 @@ public class DataManager {
 		md = Xml.transform(root, styleSheet);
         String changeDate = null;
 		xmlSerializer.update(dbms, id, md, changeDate, true, context);
+		
+		//--- Update metadata in RDF database
+		dataManRDF.updateMetadataFromXML(md, id);
 
         // Notifies the metadata change to metatada notifier service
         notifyMetadataChange(dbms, md, id);
@@ -2861,7 +2883,9 @@ public class DataManager {
 			
 			xmlSerializer.update(dbms, childId, childForUpdate, new ISODate().toString(), true, srvContext);
 
-
+			//--- Update metadata in RDF database
+			dataManRDF.updateMetadataFromXML(childForUpdate, childId);
+			
             // Notifies the metadata change to metatada notifier service
             notifyMetadataChange(dbms, childForUpdate, childId);
 

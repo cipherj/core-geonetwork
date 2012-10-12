@@ -345,7 +345,7 @@ public class Geonetwork implements ApplicationHandler {
 			xmlSerializer = new XmlSerializerDb(settingMan);
 		}
  
-		dataManRDF = new DataManagerRDF(dataDir);
+		dataManRDF = new DataManagerRDF(path + "WEB-INF/data/data/metadata_RDF", path);
 		DataManager dataMan = new DataManager(context, svnManager, xmlSerializer, schemaMan, searchMan, accessMan, dbms, settingMan, baseURL, dataDir, thesauriDir, path, dataManRDF);
 
 
