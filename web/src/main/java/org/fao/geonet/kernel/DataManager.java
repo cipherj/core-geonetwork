@@ -1487,7 +1487,7 @@ public class DataManager {
 		copyDefaultPrivForGroup(context, dbms, id, groupOwner);
 
 		//--- store metadata as RDF
-		dataManRDF.createMetadataFromXML(xml, id);
+		dataManRDF.createMetadataFromXML(xml, uuid);
 		
 		//--- store metadata categories copying them from the template
 		List categList = dbms.select("SELECT categoryId FROM MetadataCateg WHERE metadataId = ?",iTemplateId).getChildren();
@@ -1552,7 +1552,7 @@ public class DataManager {
         xmlSerializer.insert(dbms, schema, metadata, id, source, uuid, createDate, changeDate, isTemplate, title, owner, group, docType, context);
         
         //--- store metadata as RDF
-        dataManRDF.createMetadataFromXML(metadata, id$);
+        dataManRDF.createMetadataFromXML(metadata, uuid);
 
         copyDefaultPrivForGroup(context, dbms, id$, group);
 
@@ -1774,7 +1774,7 @@ public class DataManager {
         xmlSerializer.update(dbms, id, md, changeDate, updateDateStamp, context);
         
 		//--- Update metadata in RDF database
-		dataManRDF.updateMetadataFromXML(md, id);
+		dataManRDF.updateMetadataFromXML(md, getMetadataUuid(dbms, id));
 
         String isTemplate = getMetadataTemplate(dbms, id);
         // Notifies the metadata change to metatada notifier service
@@ -2264,7 +2264,7 @@ public class DataManager {
 		xmlSerializer.update(dbms, id, md, changeDate, true, context);
 		
 		//--- Update metadata in RDF database
-		dataManRDF.updateMetadataFromXML(md, id);
+		dataManRDF.updateMetadataFromXML(md, getMetadataUuid(dbms, id));
 
         // Notifies the metadata change to metatada notifier service
         notifyMetadataChange(dbms, md, id);
@@ -2884,7 +2884,7 @@ public class DataManager {
 			xmlSerializer.update(dbms, childId, childForUpdate, new ISODate().toString(), true, srvContext);
 
 			//--- Update metadata in RDF database
-			dataManRDF.updateMetadataFromXML(childForUpdate, childId);
+			dataManRDF.updateMetadataFromXML(childForUpdate, getMetadataUuid(dbms, childId));
 			
             // Notifies the metadata change to metatada notifier service
             notifyMetadataChange(dbms, childForUpdate, childId);

@@ -8,40 +8,46 @@
     xmlns:li="http://def.seegrid.csiro.au/isotc211/iso19115/2003/lineage#"
     xmlns:owl="http://www.w3.org/2002/07/owl#"
     xmlns:xsd="http://www.w3.org/2001/XMLSchema#"
-    xmlns:p190488="http://example.org/p190488#"
     xmlns:dq="http://def.seegrid.csiro.au/isotc211/iso19115/2003/dataquality#"
     xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
     xmlns:gmd="http://www.isotc211.org/2005/gmd"
     xmlns:gco="http://www.isotc211.org/2005/gco">
+    
+    <!-- commandlineParam specify with fileID="190488" for example -->
+    <xsl:param name="fileID"/>
     
     <xsl:strip-space elements="*"/>
     <xsl:output method="xml" indent="yes"/>
     
     <!-- Begin RDF document -->
     <xsl:template match="/">
-        <rdf:RDF>
-            <xsl:attribute name="xmlns:rdf">http://www.w3.org/1999/02/22-rdf-syntax-ns#</xsl:attribute>
-            <xsl:attribute name="xmlns:md">http://def.seegrid.csiro.au/isotc211/iso19115/2003/metadata#</xsl:attribute>
-            <xsl:attribute name="xmlns:skos">http://www.w3.org/2004/02/skos/core#</xsl:attribute>
-            <xsl:attribute name="xmlns:ci">http://def.seegrid.csiro.au/isotc211/iso19115/2003/citation#</xsl:attribute>
-            <xsl:attribute name="xmlns:ex">http://def.seegrid.csiro.au/isotc211/iso19115/2003/extent#</xsl:attribute>
-            <xsl:attribute name="xmlns:li">http://def.seegrid.csiro.au/isotc211/iso19115/2003/lineage#"</xsl:attribute>
-            <xsl:attribute name="xmlns:owl">http://www.w3.org/2002/07/owl#"</xsl:attribute>
-            <xsl:attribute name="xmlns:xsd">http://www.w3.org/2001/XMLSchema#"</xsl:attribute>
-            <xsl:attribute name="xmlns:p190488">http://example.org/p190488#"</xsl:attribute><!-- change this per file -->
-            <xsl:attribute name="xmlns:dq">http://def.seegrid.csiro.au/isotc211/iso19115/2003/dataquality#"</xsl:attribute>
-            <xsl:attribute name="xmlns:rdfs">http://www.w3.org/2000/01/rdf-schema#"</xsl:attribute>
-            <xsl:attribute name="xml:base">http://example.org/p190488"</xsl:attribute><!-- change this per file -->
+        <rdf:RDF    xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+                    xmlns:md="http://def.seegrid.csiro.au/isotc211/iso19115/2003/metadata#"
+                    xmlns:skos="http://www.w3.org/2004/02/skos/core#"
+                    xmlns:ci="http://def.seegrid.csiro.au/isotc211/iso19115/2003/citation#"
+                    xmlns:ex="http://def.seegrid.csiro.au/isotc211/iso19115/2003/extent#"
+                    xmlns:li="http://def.seegrid.csiro.au/isotc211/iso19115/2003/lineage#"
+                    xmlns:owl="http://www.w3.org/2002/07/owl#"
+                    xmlns:xsd="http://www.w3.org/2001/XMLSchema#"
+                    
+                    xmlns:dq="http://def.seegrid.csiro.au/isotc211/iso19115/2003/dataquality#"
+                    xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">
+             <!--xml:base="http://example.org/p190488">-->
+            <xsl:attribute name="xml:base"
+                >http://example.org/p<xsl:value-of select="$fileID"/>
+            </xsl:attribute>
             
-            <!--<rdf:Description>
-                <xsl:attribute name="rdf:about"/>
-                <xsl:apply-templates select="/*|/@*"/>
-            </rdf:Description>-->
+            <!--xmlns:p190488="http://example.org/p190488#" -->
+            <!-- how to set an attribute name that contains a variable ??? -->
+            <!--<xsl:attribute name="xmlns:p{$fileID}"
+                >http://example.org/p<xsl:value-of select="$fileID"/>#</xsl:attribute>-->
             
             <owl:Ontology rdf:about="">
                 <owl:imports rdf:resource="http://def.seegrid.csiro.au/isotc211/iso19115/2003/metadata"/>
             </owl:Ontology>
-            <md:Metadata rdf:about="http://example.org/p190488/metadata">
+            <md:Metadata>
+                <xsl:attribute name="rdf:about"
+                    >http://example.org/p<xsl:value-of select="$fileID"/>/metadata</xsl:attribute>
             
             <!-- Online Resource Links -->
             <md:distributionInfo>
@@ -97,7 +103,7 @@
             
                 <xsl:for-each select="gmd:MD_Metadata/gmd:identificationInfo/gmd:MD_DataIdentification/gmd:pointOfContact">
                     <md:contact>
-                        <ci:ResponsibleParty rdf:about="http://www.csiro.au/people/JacquelineGithaiga">
+                        <ci:ResponsibleParty rdf:about="http://www.csiro.au/people/JacquelineGithaiga"> <!-- this needs to be changed!!! -->
                             <xsl:attribute name="rdf:about"
                                 >http://www.csiro.au/people/<xsl:value-of select="translate(gmd:CI_ResponsibleParty/gmd:individualName/gco:CharacterString,' ','')"/>
                             </xsl:attribute>
