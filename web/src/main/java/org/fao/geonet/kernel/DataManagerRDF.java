@@ -1,5 +1,29 @@
- 
-// TODO: GNU Licence
+//==============================================================================
+//===
+//=== DataManagerRDF
+//===
+//=============================================================================
+//===	Copyright (C) 2001-2007 Food and Agriculture Organization of the
+//===	United Nations (FAO-UN), United Nations World Food Programme (WFP)
+//===	and United Nations Environment Programme (UNEP)
+//===
+//===	This program is free software; you can redistribute it and/or modify
+//===	it under the terms of the GNU General Public License as published by
+//===	the Free Software Foundation; either version 2 of the License, or (at
+//===	your option) any later version.
+//===
+//===	This program is distributed in the hope that it will be useful, but
+//===	WITHOUT ANY WARRANTY; without even the implied warranty of
+//===	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+//===	General Public License for more details.
+//===
+//===	You should have received a copy of the GNU General Public License
+//===	along with this program; if not, write to the Free Software
+//===	Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA
+//===
+//===	Contact: Jeroen Ticheler - FAO - Viale delle Terme di Caracalla 2,
+//===	Rome - Italy. email: geonetwork@osgeo.org
+//==============================================================================
 
 package org.fao.geonet.kernel;
 
@@ -9,9 +33,11 @@ import com.hp.hpl.jena.query.QueryExecutionFactory;
 import com.hp.hpl.jena.query.ReadWrite;
 import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
-import com.hp.hpl.jena.rdf.model.StmtIterator; 
+import com.hp.hpl.jena.rdf.model.StmtIterator;
+import com.hp.hpl.jena.shared.PrefixMapping;
 import com.hp.hpl.jena.sparql.core.DatasetImpl;
-import com.hp.hpl.jena.tdb.TDBFactory;
+import com.hp.hpl.jena.tdb.TDB;
+import com.hp.hpl.jena.tdb.TDBFactory; 
 
 import org.fao.geonet.constants.Geonet;
 import org.jdom.Element;
@@ -51,6 +77,12 @@ public class DataManagerRDF {
 		if(null == dataset) {
 			System.out.println("Opening database at : " + dbDir);
 			dataset = TDBFactory.createDataset(dbDir);
+			
+			dataset.begin(ReadWrite.WRITE);
+			
+			TDB.getContext().set(TDB.symUnionDefaultGraph, true) ; 
+			
+			dataset.commit();
 		}
 	}
 	
@@ -59,12 +91,15 @@ public class DataManagerRDF {
 	 */
 	public void closeDatabase() {
 		if(null != dataset) {
-			dataset.begin(ReadWrite.READ);
-			Model databaseDump = dataset.getDefaultModel();
+/*			dataset.begin(ReadWrite.READ);
+			
+			QueryExecution qExec = QueryExecutionFactory.create("DESCRIBE urn:x-arq:UnionGraph\\", dataset);
+			Model databaseDump = qExec.execDescribe();
+			
 			System.out.println("Database dump as RDF/XML : ");		// DEBUG
 			databaseDump.write(System.out);
 			System.out.println("\nEnd of DB Dump");
-			dataset.commit();
+			dataset.commit();*/
 			
 			dataset.close();
 			dataset = null;
@@ -92,19 +127,37 @@ public class DataManagerRDF {
 	}
 	
 	public String createMetadataFromRDF(Element md, String uuid) {
-		// Convert the RDF/XML to an RDF model
+		String metadataName = "<http://example.org/" + uuid + "/metadata>";
 		
+		// Convert the RDF/XML to an RDF model
 		Model newMetadataModel = createModelFromRDFXML(md);
 		
 		dataset.begin(ReadWrite.WRITE);
 		
-		// TODO: Update to named model for the metadata
-		Model existingMetadata = dataset.getDefaultModel();
-		existingMetadata.add(newMetadataModel);
+		if(!dataset.containsNamedModel(metadataName)) {
+			dataset.addNamedModel(metadataName, newMetadataModel);
+		}
+		else {
+			dataset.replaceNamedModel(metadataName, newMetadataModel);
+		}
 		
 		dataset.commit();
 		
 		return uuid;
+	}
+	
+	public boolean deleteMetadata(String uuid) {
+		String metadataName = "<http://example.org/" + uuid + "/metadata>";
+		
+		dataset.begin(ReadWrite.WRITE);
+		
+		if(dataset.containsNamedModel(metadataName)) {
+			dataset.removeNamedModel(metadataName);
+		}
+				
+		dataset.commit();
+		
+		return true;
 	}
 	
 	public Element getMetadataAsXML(String uuid) {
@@ -184,36 +237,13 @@ public class DataManagerRDF {
 	public boolean updateMetadataFromRDF(Element newRDFmd, String uuid) {
 		System.out.println("Updating " + uuid);
 		
-		String metadataname = "<http://example.org/" + uuid + "/metadata>";
+		String metadataName = "<http://example.org/" + uuid + "/metadata>";
 		
 		dataset.begin(ReadWrite.WRITE);
 		
-		QueryExecution qExec = QueryExecutionFactory.create("DESCRIBE " + metadataname, dataset);
-		Model oldMetadataModel = qExec.execDescribe();
-		Model newMetadataModel = createModelFromRDFXML(newRDFmd);
+		Model newMDModel = createModelFromRDFXML(newRDFmd);
 		
-		System.out.println("Old MD as RDF/XML : ");		// DEBUG
-		oldMetadataModel.write(System.out);
-		System.out.println("\nEnd of DB Dump");
-		
-		// Get statements that are in the old model but not the new one
-		Model diffModel = oldMetadataModel.difference(newMetadataModel); 
-		
-		StmtIterator stmtIter = diffModel.listStatements();
-		
-		System.out.println("diff MD as RDF/XML : ");		// DEBUG
-		diffModel.write(System.out);
-		System.out.println("\nEnd of DB Dump");
-		
-		// Delete statements from database
-		Model currentDB = dataset.getDefaultModel();
-		
-		while(stmtIter.hasNext()) {
-			currentDB.remove(stmtIter.nextStatement());
-		}
-		
-		// Add all statements from new model
-		currentDB.add(newMetadataModel);
+		dataset.replaceNamedModel(metadataName, newMDModel);
 		
 		dataset.commit();
 		

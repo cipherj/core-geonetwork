@@ -2063,6 +2063,9 @@ public class DataManager {
 
 		//--- remove metadata
 		xmlSerializer.delete(dbms, "Metadata", id, context);
+		
+		//--- remove metadata from RDF store
+		dataManRDF.deleteMetadata(uuid);
 
         // Notifies the metadata change to metatada notifier service
         if (isTemplate.equals("n")) {
@@ -2081,6 +2084,8 @@ public class DataManager {
      * @throws Exception
      */
 	public synchronized void deleteMetadataGroup(ServiceContext context, Dbms dbms, String id) throws Exception {
+		String uuid = getMetadataUuid(dbms, id);
+		
 		//--- remove operations
 		deleteMetadataOper(dbms, id, false);
 
@@ -2094,6 +2099,9 @@ public class DataManager {
 		//--- remove metadata
 		xmlSerializer.delete(dbms, "Metadata", id, context);
 
+		//--- remove metadata from RDF store
+		dataManRDF.deleteMetadata(uuid);
+		
 		//--- update search criteria
 		searchMan.deleteGroup("_id", id + "");
 	}
