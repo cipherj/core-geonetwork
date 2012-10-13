@@ -9,6 +9,7 @@ import com.hp.hpl.jena.query.QueryExecutionFactory;
 import com.hp.hpl.jena.query.ReadWrite;
 import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
+import com.hp.hpl.jena.rdf.model.StmtIterator; 
 import com.hp.hpl.jena.sparql.core.DatasetImpl;
 import com.hp.hpl.jena.tdb.TDBFactory;
 
@@ -93,21 +94,7 @@ public class DataManagerRDF {
 	public String createMetadataFromRDF(Element md, String uuid) {
 		// Convert the RDF/XML to an RDF model
 		
-		Model newMetadataModel = ModelFactory.createDefaultModel();
-		XMLOutputter xmlOP = new XMLOutputter();
-		ByteArrayOutputStream baos = new ByteArrayOutputStream(); 
-		
-		try {
-			System.out.println("Creating RDF/XML Data : ");
-			xmlOP.output(md, System.out);		// DEBUG
-			System.out.println("\nEnd of RDF/XML");
-			xmlOP.output(md, baos);
-		}
-		catch(Exception e) {
-			// TODO: Handle this appropriately
-		}
-		
-		newMetadataModel.read(new ByteArrayInputStream(baos.toByteArray()), null);
+		Model newMetadataModel = createModelFromRDFXML(md);
 		
 		dataset.begin(ReadWrite.WRITE);
 		
@@ -151,12 +138,11 @@ public class DataManagerRDF {
 		
 		// Create query
 		QueryExecution qExec = QueryExecutionFactory.create("DESCRIBE " + metadataname, dataset);
-		
 		Model metadataModel = qExec.execDescribe();
 		
 		dataset.commit();
 		
-		System.out.println("Got metadata as RDF : ");
+		System.out.println("Got metadata for " + uuid + " as RDF : ");
 		metadataModel.write(System.out);		// DEBUG
 		System.out.println("End RDF");
 		
@@ -180,7 +166,10 @@ public class DataManagerRDF {
 		Element mdRDF = null;
 		
 		try {
-			mdRDF = Xml.transform(md, appPath + Geonet.Path.STYLESHEETS + FS + "xml2rdf.xsl");
+			TreeMap<String, String> params = new TreeMap<String, String>();
+			params.put("fileID", uuid);
+			
+			mdRDF = Xml.transform(md, appPath + Geonet.Path.STYLESHEETS + FS + "xml2rdf.xsl", params);
 		}
 		catch(Exception e) {
 			System.out.println("Geonetwork.DataManagerRDF - ERROR : Convertion of XMl -> RDF/XML failed");
@@ -189,12 +178,65 @@ public class DataManagerRDF {
 			return false;
 		}
 		
-		return updateMetadateFromRDF(mdRDF, uuid);
+		return updateMetadataFromRDF(mdRDF, uuid);
 	}
 	
-	public boolean updateMetadataFromRDF(Element md, String uuid) {
-		System.out.println("DataManagerRDF::updateMetadataFromRDF(...) - Unfinished");
+	public boolean updateMetadataFromRDF(Element newRDFmd, String uuid) {
+		System.out.println("Updating " + uuid);
 		
-		return false;
+		String metadataname = "<http://example.org/" + uuid + "/metadata>";
+		
+		dataset.begin(ReadWrite.WRITE);
+		
+		QueryExecution qExec = QueryExecutionFactory.create("DESCRIBE " + metadataname, dataset);
+		Model oldMetadataModel = qExec.execDescribe();
+		Model newMetadataModel = createModelFromRDFXML(newRDFmd);
+		
+		System.out.println("Old MD as RDF/XML : ");		// DEBUG
+		oldMetadataModel.write(System.out);
+		System.out.println("\nEnd of DB Dump");
+		
+		// Get statements that are in the old model but not the new one
+		Model diffModel = oldMetadataModel.difference(newMetadataModel); 
+		
+		StmtIterator stmtIter = diffModel.listStatements();
+		
+		System.out.println("diff MD as RDF/XML : ");		// DEBUG
+		diffModel.write(System.out);
+		System.out.println("\nEnd of DB Dump");
+		
+		// Delete statements from database
+		Model currentDB = dataset.getDefaultModel();
+		
+		while(stmtIter.hasNext()) {
+			currentDB.remove(stmtIter.nextStatement());
+		}
+		
+		// Add all statements from new model
+		currentDB.add(newMetadataModel);
+		
+		dataset.commit();
+		
+		return true;
+	}
+	
+	private Model createModelFromRDFXML(Element md) {
+		Model mdModel = ModelFactory.createDefaultModel();
+		XMLOutputter xmlOP = new XMLOutputter();
+		ByteArrayOutputStream baos = new ByteArrayOutputStream(); 
+		
+		try {
+			System.out.println("Creating Model from RDF/XML Data : ");
+			xmlOP.output(md, System.out);		// DEBUG
+			System.out.println("\nEnd of RDF/XML");
+			xmlOP.output(md, baos);
+		}
+		catch(Exception e) {
+			// TODO: Handle this appropriately
+		}
+		
+		mdModel.read(new ByteArrayInputStream(baos.toByteArray()), null);
+		
+		return mdModel;
 	}
 }
