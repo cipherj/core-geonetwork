@@ -1601,14 +1601,11 @@ public class DataManager {
 		boolean doXLinks = xmlSerializer.resolveXLinks();
 		Element md = xmlSerializer.selectNoXLinkResolver(dbms, "Metadata", id);
 		if (md == null) return null;
-		md.detach();
 		
 		String uuid = getMetadataUuid(dbms, id);
-		dataManRDF.getMetadataAsXML(uuid);
-
-		// TODO: Uncomment when RDF is working properly
-//		md = dataManRDF.getMetadataAsXML(uuid);
+		md = dataManRDF.getMetadataAsXML(uuid);
 		
+		md.detach();
 		return md;
 	}
 
@@ -1631,10 +1628,7 @@ public class DataManager {
 		if (md == null) return null;
 		
 		String uuid = getMetadataUuid(dbms, id);
-		dataManRDF.getMetadataAsXML(uuid);
-
-		// TODO: Uncomment when RDF is working properly
-//		md = dataManRDF.getMetadataAsXML(uuid);
+		md = dataManRDF.getMetadataAsXML(uuid);
 		
 		String version = null;
 

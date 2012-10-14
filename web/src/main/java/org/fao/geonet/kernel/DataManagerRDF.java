@@ -61,6 +61,12 @@ public class DataManagerRDF {
 	
 	private Dataset dataset;
 	
+	/**
+	 * Initialises the RDF datastore
+	 * 
+	 * @param dbDir The directory where the RDF datastore is located
+	 * @param appPath The application path
+	 */
 	public DataManagerRDF(String dbDir, String appPath) {
 		this.appPath = appPath;
 		this.dbDir = dbDir;
@@ -71,7 +77,7 @@ public class DataManagerRDF {
 	}
 	
 	/**
-	 * Opens the databse
+	 * Opens the databse creating an empty database if one doesn't already exist
 	 */
 	private void openDatabase() {
 		if(null == dataset) {
@@ -91,21 +97,17 @@ public class DataManagerRDF {
 	 */
 	public void closeDatabase() {
 		if(null != dataset) {
-/*			dataset.begin(ReadWrite.READ);
-			
-			QueryExecution qExec = QueryExecutionFactory.create("DESCRIBE urn:x-arq:UnionGraph\\", dataset);
-			Model databaseDump = qExec.execDescribe();
-			
-			System.out.println("Database dump as RDF/XML : ");		// DEBUG
-			databaseDump.write(System.out);
-			System.out.println("\nEnd of DB Dump");
-			dataset.commit();*/
-			
 			dataset.close();
 			dataset = null;
 		}
 	}
 	
+	/**
+	 * Creates a new entry in the database for the metadata.
+	 * 
+	 * @param md The metadata as XML
+	 * @param uuid The UUID of the metadata
+	 */
 	public String createMetadataFromXML(Element md, String uuid) {
 		// Transform XML->RDF
 		Element mdRDF = null;
@@ -126,6 +128,12 @@ public class DataManagerRDF {
 		return createMetadataFromRDF(mdRDF, uuid);
 	}
 	
+	/**
+	 * Creates a new entry in the database for the metadata.
+	 * 
+	 * @param md The metadata as RDF/XML
+	 * @param uuid The UUID of the metadata
+	 */
 	public String createMetadataFromRDF(Element md, String uuid) {
 		String metadataName = "<http://example.org/" + uuid + "/metadata>";
 		
@@ -146,6 +154,11 @@ public class DataManagerRDF {
 		return uuid;
 	}
 	
+	/**
+	 * Deletes metadata from the database
+	 * 
+	 * @param uuid The UUID of the metadata to be deleted
+	 */
 	public boolean deleteMetadata(String uuid) {
 		String metadataName = "<http://example.org/" + uuid + "/metadata>";
 		
@@ -160,25 +173,36 @@ public class DataManagerRDF {
 		return true;
 	}
 	
+	/**
+	 * Gets the metadata specified by uuid from the database as an XML record
+	 * 
+	 * @param uuid The UUID of the metadata record to retreive
+	 */
 	public Element getMetadataAsXML(String uuid) {
 		Element mdRDF = getMetadataAsRDFXML(uuid);
 		Element mdXML = null;
 		
-		// TODO: Uncomment when rdf2xml.xsl has been written
-/*		try {
-			mdXML = Xml.transform(mdRDF, appPath + Geonet.Path.STYLESHEETS + FS + "rdf2xml.xsl");
+		try {
+			mdXML = Xml.transform(mdRDF, appPath + Geonet.Path.STYLESHEETS + FS + "rdf2xml.xsl"); 
+			
+			System.out.println("Metadata as XML after rdf2xml conversion : ");
+			XMLOutputter xmlOP = new XMLOutputter();
+			xmlOP.output(mdXML, System.out);		// DEBUG
+			System.out.println("\nEnd of XML");
 		}
 		catch(Exception e) {
 			Log.error("Geonetwork.DataManagerRDF","ERROR : Convertion of RDF/XMl -> XML failed");
 			
 			mdXML = null;
-		}*/
+		}
 		
 		return mdXML;
 	}
 	
 	/**
-	 * Get metadata out of the RDF database in an RDF/XML format
+	 * Gets the metadata specified by uuid from the database as an RDF/XML record
+	 * 
+	 * @param uuid The UUID of the metadata record to retreive
 	 */
 	public Element getMetadataAsRDFXML(String uuid) {
 
@@ -214,6 +238,14 @@ public class DataManagerRDF {
 		return rdfXml;
 	}
 	
+	/**
+	 * Overwrites the metadata specified by uuid with the metadata in md.
+	 *  md should be in the standard GeoNetwork XML format. The metadata
+	 *  is converted to RDF before being stored.
+	 * 
+	 * @param md The metadata record in XML
+	 * @param uuid The UUID of the record to update
+	 */
 	public boolean updateMetadataFromXML(Element md, String uuid) {
 		// Transform XML->RDF
 		Element mdRDF = null;
@@ -234,6 +266,13 @@ public class DataManagerRDF {
 		return updateMetadataFromRDF(mdRDF, uuid);
 	}
 	
+	/**
+	 * Overwrites the metadata specified by uuid with the metadata in md.
+	 *  md should be in RDF/XML
+	 * 
+	 * @param md The metadata record in RDF/XML
+	 * @param uuid The UUID of the record to update
+	 */
 	public boolean updateMetadataFromRDF(Element newRDFmd, String uuid) {
 		System.out.println("Updating " + uuid);
 		
@@ -250,6 +289,11 @@ public class DataManagerRDF {
 		return true;
 	}
 	
+	/**
+	 * Creates a Jena Model from the metadata md
+	 * 
+	 * @param md The metadata record in RDF/XML
+	 */
 	private Model createModelFromRDFXML(Element md) {
 		Model mdModel = ModelFactory.createDefaultModel();
 		XMLOutputter xmlOP = new XMLOutputter();
