@@ -1603,7 +1603,8 @@ public class DataManager {
 		if (md == null) return null;
 		
 		String uuid = getMetadataUuid(dbms, id);
-		md = dataManRDF.getMetadataAsXML(uuid);
+		String schema = getMetadataSchema(dbms, id);
+		md = dataManRDF.getMetadataAsXML(uuid, schema);
 		
 		md.detach();
 		return md;
@@ -1628,7 +1629,8 @@ public class DataManager {
 		if (md == null) return null;
 		
 		String uuid = getMetadataUuid(dbms, id);
-		md = dataManRDF.getMetadataAsXML(uuid);
+		String schema4rdf = getMetadataSchema(dbms, id);
+		md = dataManRDF.getMetadataAsXML(uuid, schema4rdf);
 		
 		String version = null;
 

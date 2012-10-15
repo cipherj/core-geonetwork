@@ -60,6 +60,7 @@ public class DataManagerRDF {
 	private static String FS = File.separator;
 	
 	private Dataset dataset;
+	private TreeMap<String, String> rdfPrefixes;
 	
 	/**
 	 * Initialises the RDF datastore
@@ -70,6 +71,21 @@ public class DataManagerRDF {
 	public DataManagerRDF(String dbDir, String appPath) {
 		this.appPath = appPath;
 		this.dbDir = dbDir;
+		
+		rdfPrefixes = new TreeMap<String, String>();
+		rdfPrefixes.put("xsl", "http://www.w3.org/1999/XSL/Transform");
+		rdfPrefixes.put("md", "http://def.seegrid.csiro.au/isotc211/iso19115/2003/metadata#");
+		rdfPrefixes.put("rdf", "http://www.w3.org/1999/02/22-rdf-syntax-ns#");
+		rdfPrefixes.put("skos", "http://www.w3.org/2004/02/skos/core#");
+		rdfPrefixes.put("ci", "http://def.seegrid.csiro.au/isotc211/iso19115/2003/citation#");
+		rdfPrefixes.put("ex", "http://def.seegrid.csiro.au/isotc211/iso19115/2003/extent#");
+		rdfPrefixes.put("li", "http://def.seegrid.csiro.au/isotc211/iso19115/2003/lineage#");
+		rdfPrefixes.put("owl", "http://www.w3.org/2002/07/owl#");
+		rdfPrefixes.put("xsd", "http://www.w3.org/2001/XMLSchema#");
+		rdfPrefixes.put("dq", "http://def.seegrid.csiro.au/isotc211/iso19115/2003/dataquality#");
+		rdfPrefixes.put("rdfs", "http://www.w3.org/2000/01/rdf-schema#");
+		rdfPrefixes.put("gmd", "http://www.isotc211.org/2005/gmd");
+		rdfPrefixes.put("gco", "http://www.isotc211.org/2005/gco");	    
 		
 		// Initialise RDF store (Should probably be done elsewhere)
 		dataset = null;
@@ -178,7 +194,9 @@ public class DataManagerRDF {
 	 * 
 	 * @param uuid The UUID of the metadata record to retreive
 	 */
-	public Element getMetadataAsXML(String uuid) {
+	public Element getMetadataAsXML(String uuid, String schema) {
+		// TODO: Extract metadata based on the schema
+		
 		Element mdRDF = getMetadataAsRDFXML(uuid);
 		Element mdXML = null;
 		
@@ -216,6 +234,7 @@ public class DataManagerRDF {
 		// Create query
 		QueryExecution qExec = QueryExecutionFactory.create("DESCRIBE " + metadataname, dataset);
 		Model metadataModel = qExec.execDescribe();
+		metadataModel.setNsPrefixes(rdfPrefixes);
 		
 		dataset.commit();
 		
