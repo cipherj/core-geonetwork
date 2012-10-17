@@ -248,9 +248,11 @@ public class DataManagerRDF {
 			rdfXml = Xml.loadStream(new ByteArrayInputStream(baos.toByteArray()));
 		}
 		catch (IOException e) {					// TODO: Deal with errors properly
+			System.out.println("ERROR : Exception occurred in DataManagerRDF::getMetadataAsRDFXML(...)");
 			rdfXml = null;
 		}
 		catch (JDOMException e) {
+			System.out.println("ERROR : Exception occurred in DataManagerRDF::getMetadataAsRDFXML(...)");
 			rdfXml = null;
 		}
 		
@@ -323,12 +325,12 @@ public class DataManagerRDF {
 			xmlOP.output(md, System.out);		// DEBUG
 			System.out.println("\nEnd of RDF/XML");
 			xmlOP.output(md, baos);
+			mdModel.read(new ByteArrayInputStream(baos.toByteArray()), null);
 		}
 		catch(Exception e) {
+			System.out.println("ERROR : Exception occurred in DataManagerRDF::createModelFromRDFXML(...)");
 			// TODO: Handle this appropriately
 		}
-		
-		mdModel.read(new ByteArrayInputStream(baos.toByteArray()), null);
 		
 		return mdModel;
 	}
