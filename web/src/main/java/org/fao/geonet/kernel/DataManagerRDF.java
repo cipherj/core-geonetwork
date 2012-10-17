@@ -128,14 +128,10 @@ public class DataManagerRDF {
 	 * @param uuid The UUID of the metadata
 	 */
 	public String createMetadataFromXML(Element md, String uuid) {
-		// Transform XML->RDF
 		Element mdRDF = null;
 		
 		try {
-			TreeMap<String, String> params = new TreeMap<String, String>();
-			params.put("fileID", uuid);
-			
-			mdRDF = Xml.transform(md, appPath + Geonet.Path.STYLESHEETS + FS + "xml2rdf.xsl", params);
+			mdRDF = Xml.transform(md, appPath + Geonet.Path.STYLESHEETS + FS + "xml2rdf.xsl");
 		}
 		catch(Exception e) {
 			System.out.println("Geonetwork.DataManagerRDF - ERROR : Convertion of XMl -> RDF/XML failed");
@@ -154,7 +150,7 @@ public class DataManagerRDF {
 	 * @param uuid The UUID of the metadata
 	 */
 	public String createMetadataFromRDF(Element md, String uuid) {
-		String metadataName = "<http://example.org/" + uuid + "/metadata>";
+		String metadataName = "http://example.org/" + uuid + "/metadata";
 		
 		// Convert the RDF/XML to an RDF model
 		Model newMetadataModel = createModelFromRDFXML(md);
@@ -196,6 +192,7 @@ public class DataManagerRDF {
 	 * Gets the metadata specified by uuid from the database as an XML record
 	 * 
 	 * @param uuid The UUID of the metadata record to retreive
+	 * @param schema The schema to get the metadata as (not implemented yet)
 	 */
 	public Element getMetadataAsXML(String uuid, String schema) {
 		// TODO: Extract metadata based on the schema
@@ -206,10 +203,10 @@ public class DataManagerRDF {
 		try {
 			mdXML = Xml.transform(mdRDF, appPath + Geonet.Path.STYLESHEETS + FS + "rdf2xml.xsl"); 
 			
-			System.out.println("Metadata as XML after rdf2xml conversion : ");
+/*			System.out.println("Metadata as XML after rdf2xml conversion : ");
 			XMLOutputter xmlOP = new XMLOutputter();
 			xmlOP.output(mdXML, System.out);		// DEBUG
-			System.out.println("\nEnd of XML");
+			System.out.println("\nEnd of XML");*/
 		}
 		catch(Exception e) {
 			Log.error("Geonetwork.DataManagerRDF","ERROR : Convertion of RDF/XMl -> XML failed");
@@ -232,18 +229,31 @@ public class DataManagerRDF {
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		Element rdfXml = null;
 		
+		String template = metadataname + " ?p ?o0 . \n";
+		String union = "GRAPH " + metadataname + " { " + metadataname + " ?p ?o0 }. \n";
+		String where = " { " + union + " }\n";
+		
+		for(int i = 0; i < 20; i++) {
+			template = template + "?o" + i + " ?p" + (i+1) + " ?o" + (i+1) + " .\n";
+			union = union + "GRAPH <urn:x-arq:UnionGraph> { ?o" +(i)+ " ?p" + (i+1) + " ?o" + (i+1) + " }.\n";
+			where = where + "UNION { " + union + "}\n";
+		}
+		
+		String query =  "CONSTRUCT { " + template + "}\n";
+		query = query + "WHERE { " + where + "}";
+		
 		dataset.begin(ReadWrite.READ);
 		
 		// Create query
-		QueryExecution qExec = QueryExecutionFactory.create("DESCRIBE " + metadataname, dataset);
-		Model metadataModel = qExec.execDescribe();
+		QueryExecution qExec = QueryExecutionFactory.create(query, dataset);
+		Model metadataModel = qExec.execConstruct();
 		metadataModel.setNsPrefixes(rdfPrefixes);
 		
 		dataset.commit();
 		
-		System.out.println("Got metadata for " + uuid + " as RDF : ");
+/*		System.out.println("Got metadata for " + uuid + " as RDF : ");
 		metadataModel.write(System.out, "RDF/XML-ABBREV");		// DEBUG
-		System.out.println("End RDF");
+		System.out.println("End RDF");*/
 		
 		metadataModel.write(baos, "RDF/XML-ABBREV");
 		
@@ -251,11 +261,11 @@ public class DataManagerRDF {
 			rdfXml = Xml.loadStream(new ByteArrayInputStream(baos.toByteArray()));
 		}
 		catch (IOException e) {					// TODO: Deal with errors properly
-			System.out.println("ERROR : Exception occurred in DataManagerRDF::getMetadataAsRDFXML(...)");
+			Log.error("Geonetwork.DataManagerRDF", "ERROR : IOException occurred in DataManagerRDF::getMetadataAsRDFXML(...)");
 			rdfXml = null;
 		}
 		catch (JDOMException e) {
-			System.out.println("ERROR : Exception occurred in DataManagerRDF::getMetadataAsRDFXML(...)");
+			Log.error("Geonetwork.DataManagerRDF", "ERROR : JDOMException occurred in DataManagerRDF::getMetadataAsRDFXML(...)");
 			rdfXml = null;
 		}
 		
@@ -275,14 +285,11 @@ public class DataManagerRDF {
 		Element mdRDF = null;
 		
 		try {
-			TreeMap<String, String> params = new TreeMap<String, String>();
-			params.put("fileID", uuid);
-			
-			mdRDF = Xml.transform(md, appPath + Geonet.Path.STYLESHEETS + FS + "xml2rdf.xsl", params);
+			mdRDF = Xml.transform(md, appPath + Geonet.Path.STYLESHEETS + FS + "xml2rdf.xsl");
 		}
 		catch(Exception e) {
 			System.out.println("Geonetwork.DataManagerRDF - ERROR : Convertion of XMl -> RDF/XML failed");
-			Log.error("Geonetwork.DataManagerRDF","ERROR : Convertion of XMl -> RDF/XML failed");
+			Log.error("Geonetwork.DataManagerRDF", "ERROR : Convertion of XMl -> RDF/XML failed");
 			
 			return false;
 		}
@@ -300,7 +307,7 @@ public class DataManagerRDF {
 	public boolean updateMetadataFromRDF(Element newRDFmd, String uuid) {
 		System.out.println("Updating " + uuid);
 		
-		String metadataName = "<http://example.org/" + uuid + "/metadata>";
+		String metadataName = "http://example.org/" + uuid + "/metadata";
 		
 		dataset.begin(ReadWrite.WRITE);
 		
@@ -324,15 +331,15 @@ public class DataManagerRDF {
 		ByteArrayOutputStream baos = new ByteArrayOutputStream(); 
 		
 		try {
-			System.out.println("Creating Model from RDF/XML Data : ");
+/*			System.out.println("Creating Model from RDF/XML Data : ");
 			xmlOP.output(md, System.out);		// DEBUG
-			System.out.println("\nEnd of RDF/XML");
+			System.out.println("\nEnd of RDF/XML");*/
 			xmlOP.output(md, baos);
 			mdModel.read(new ByteArrayInputStream(baos.toByteArray()), null);
 		}
 		catch(Exception e) {
-			System.out.println("ERROR : Exception occurred in DataManagerRDF::createModelFromRDFXML(...)");
-			// TODO: Handle this appropriately
+			Log.error("Geonetwork.DataManagerRDF", "ERROR : Exception occurred in DataManagerRDF::createModelFromRDFXML(...)");
+			mdModel = null;
 		}
 		
 		return mdModel;
